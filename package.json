@@ -1,7 +1,7 @@
 {
   "name": "komari-theme-adhesive-note",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "A Komari Monitor theme that turns every server into a handwritten note stuck on the wall",
   "license": "MIT",
@@ -17,9 +17,13 @@
     "shot": "node scripts/shot.mjs"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.10.0",
+    "@connectrpc/connect": "^2.1.1",
+    "@connectrpc/connect-web": "^2.1.1",
     "@fontsource-variable/caveat": "^5.3.0",
     "@fontsource/architects-daughter": "^5.3.0",
     "@fontsource/kalam": "^5.3.0",
+    "@komari/proto": "github:r11234567/komari-proto#v0.1.28",
     "@tanstack/react-query": "^5.101.4",
     "i18next": "^26.3.6",
     "react": "^19.2.8",

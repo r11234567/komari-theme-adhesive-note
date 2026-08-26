@@ -21,7 +21,12 @@ export function useLiveData(): LiveDataContextValue {
   return useContext(LiveDataContext);
 }
 
-/** 轮询间隔（毫秒）。官方主题同样是 2s。 */
+/**
+ * 渲染节奏（毫秒）。
+ *
+ * 状态由 Connect 的 WatchAgentStatus 推送，不再轮询；这个间隔改为限制向 React
+ * 提交的频率——推送以单个节点为粒度，逐条提交会让整面卡片墙持续重排。
+ */
 export const LIVE_POLL_INTERVAL = 2_000;
 
 /** 参与 diff 的标量字段——全部相等即可复用旧对象引用 */

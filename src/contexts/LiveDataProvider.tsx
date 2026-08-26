@@ -1,7 +1,7 @@
 import { startTransition, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { NodeStatusMap } from "@/api/types";
-import { rpc2, rpcCall } from "@/lib/rpc2";
+import { browserClient, nodeStatusOf } from "@/api/connect";
 import {
   LIVE_POLL_INTERVAL,
   LiveDataContext,
@@ -11,12 +11,17 @@ import {
 /** 大批节点同时变化时每帧最多提交的卡片数。 */
 const STATUS_BATCH_SIZE = 10;
 
+/** 流断开后的重连间隔。 */
+const RECONNECT_DELAY = 2_000;
+
 /**
- * 实时状态轮询。
+ * 实时状态订阅。
  *
- * 官方主题已放弃 `/api/clients` WebSocket，改为定时调用 RPC2 的
- * `common:getNodesLatestStatus`，本主题跟随该实践，并沿用两项优化：
- * 逐字段 diff 后复用旧引用、页面隐藏时暂停轮询。
+ * 走 Connect 的 WatchAgentStatus：服务端按事件推送变化的节点，不再轮询。
+ * 推送的粒度是单个节点，而 LIVE_POLL_INTERVAL 在这里改为约束**渲染**节奏——
+ * 节点多时逐条事件都提交一次会让整面卡片墙持续重排。
+ *
+ * 沿用原有两项优化：逐字段 diff 后复用旧引用、页面隐藏时停止订阅。
  */
 export function LiveDataProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<NodeStatusMap>({});
@@ -26,25 +31,15 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let stopped = false;
-    let inFlight = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    let controller: AbortController | null = null;
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
     let batchFrame: number | null = null;
     let batchGeneration = 0;
     let statusSnapshot: NodeStatusMap = {};
-
-    const clearTimer = () => {
-      if (timer !== null) {
-        clearTimeout(timer);
-        timer = null;
-      }
-    };
-
-    const scheduleNext = () => {
-      clearTimer();
-      if (!stopped && !document.hidden) {
-        timer = setTimeout(() => void fetchLatest(), LIVE_POLL_INTERVAL);
-      }
-    };
+    // 流是增量的，这里累积出完整快照再交给 diff。
+    let incoming: NodeStatusMap = {};
+    let pending = false;
+    let afterEventId = "";
 
     const clearStatusBatch = () => {
       batchGeneration++;
@@ -54,10 +49,17 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const commitStatus = (incoming: NodeStatusMap, sampledAt: number) => {
+    const clearFlushTimer = () => {
+      if (flushTimer !== null) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+      }
+    };
+
+    const commitStatus = (next: NodeStatusMap, sampledAt: number) => {
       clearStatusBatch();
       const generation = batchGeneration;
-      const merged = mergeStatus(statusSnapshot, incoming);
+      const merged = mergeStatus(statusSnapshot, next);
       const statusKeys = new Set([
         ...Object.keys(statusSnapshot),
         ...Object.keys(merged),
@@ -105,58 +107,92 @@ export function LiveDataProvider({ children }: { children: ReactNode }) {
         }
       };
 
-      // 与网络响应任务错开，再按帧提交；不改变数据，只避免一次性协调整面卡片墙。
+      // 与推送节奏错开，再按帧提交；不改变数据，只避免一次性协调整面卡片墙。
       batchFrame = requestAnimationFrame(commitNextBatch);
     };
 
-    const fetchLatest = async () => {
-      if (inFlight || stopped || document.hidden) return;
-      inFlight = true;
+    const flush = () => {
+      flushTimer = null;
+      if (stopped || !pending) return;
+      pending = false;
+      commitStatus(incoming, Date.now());
+      setLoading(false);
+    };
 
-      try {
-        const next = await rpcCall<NodeStatusMap>("common:getNodesLatestStatus");
+    const scheduleFlush = () => {
+      pending = true;
+      if (flushTimer === null) flushTimer = setTimeout(flush, LIVE_POLL_INTERVAL);
+    };
+
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => {
+        setTimeout(resolve, ms);
+      });
+
+    // 页面不可见时不订阅：既省服务端推送，也省客户端电量。
+    const waitUntilVisible = () =>
+      document.hidden
+        ? new Promise<void>((resolve) => {
+            const onVisible = () => {
+              if (document.hidden && !stopped) return;
+              document.removeEventListener("visibilitychange", onVisible);
+              resolve();
+            };
+            document.addEventListener("visibilitychange", onVisible);
+          })
+        : Promise.resolve();
+
+    const watch = async () => {
+      while (!stopped) {
+        await waitUntilVisible();
         if (stopped) return;
-
-        // 服务端异常时可能返回 null，此时保留上一次的数据而不是清空界面
-        if (next && typeof next === "object") {
-          commitStatus(next, Date.now());
-        }
-        setError(null);
-      } catch (err) {
-        if (!stopped) {
-          setError(err instanceof Error ? err : new Error(String(err)));
-        }
-      } finally {
-        inFlight = false;
-        if (!stopped) {
+        controller = new AbortController();
+        try {
+          for await (const event of browserClient.watchAgentStatus(
+            { agentIds: [], afterEventId },
+            { signal: controller.signal, timeoutMs: 0 },
+          )) {
+            if (stopped) return;
+            const agent = event.agent;
+            if (!agent) continue;
+            // 记住事件位点，重连时不必从头重放。
+            afterEventId = agent.eventId || afterEventId;
+            incoming = {
+              ...incoming,
+              [agent.agentId]: nodeStatusOf(agent, event.latestReport),
+            };
+            setError(null);
+            scheduleFlush();
+          }
+        } catch (err) {
+          if (stopped) return;
+          // 主动断开（切到后台、卸载）不是故障。
+          if (!(err instanceof DOMException && err.name === "AbortError")) {
+            setError(err instanceof Error ? err : new Error(String(err)));
+          }
           setLoading(false);
-          // 从响应结束后再计时；慢请求不会制造空转 tick 或紧挨着下一轮请求。
-          scheduleNext();
         }
+        if (stopped) return;
+        await wait(RECONNECT_DELAY);
       }
     };
 
     const onVisibilityChange = () => {
       if (document.hidden) {
-        // 切到别的标签页就停下：既省服务端资源，也省客户端电量
-        clearTimer();
+        clearFlushTimer();
         clearStatusBatch();
-        rpc2.pause();
-      } else {
-        // 回到前台立刻补一次，避免看到过期数字
-        rpc2.resume();
-        void fetchLatest();
+        controller?.abort(new DOMException("Hidden", "AbortError"));
       }
     };
 
-    if (document.hidden) rpc2.pause();
-    else void fetchLatest();
     document.addEventListener("visibilitychange", onVisibilityChange);
+    void watch();
 
     return () => {
       stopped = true;
-      clearTimer();
+      clearFlushTimer();
       clearStatusBatch();
+      controller?.abort(new DOMException("Unmounted", "AbortError"));
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []);
