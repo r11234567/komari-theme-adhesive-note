@@ -17,7 +17,10 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
+    // erasableSyntaxOnly 无法开启：@komari/proto 以未编译的 .ts 分发，其生成代码
+    // 用 enum 表达 protobuf 枚举，而 enum 不是可擦除语法；这些文件是被直接导入的
+    // 源码而非 .d.ts，skipLibCheck 也管不到。该选项只约束本主题自己的写法，
+    // 收益不足以换掉类型化的 Connect 客户端。
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "exactOptionalPropertyTypes": false,

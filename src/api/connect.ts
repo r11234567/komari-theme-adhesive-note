@@ -11,6 +11,7 @@
 import { createClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { timestampDate, timestampFromDate } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import {
   AgentStatus,
   BrowserService,
@@ -47,7 +48,7 @@ export const metricsClient = createClient(MetricsService, transport);
 /** protobuf 的 uint64 在 TS 里是 bigint，主题各处按 number 计算。 */
 const asNumber = (value?: bigint) => Number(value ?? 0n);
 
-const isoOf = (value?: { seconds: bigint; nanos: number }) =>
+const isoOf = (value?: Timestamp) =>
   value ? timestampDate(value).toISOString() : "";
 
 /** 服务端与 loadRecordMetricNames 对齐的指标集合，用于重建历史负载记录。 */
