@@ -29,6 +29,7 @@ import { Stationery } from "@/components/paper/Stationery";
 import { useLiveData } from "@/contexts/live-data";
 import { useSite } from "@/contexts/site";
 import {
+  calculateTrafficUsage,
   expiryDays,
   formatBytes,
   formatPercent,
@@ -513,6 +514,13 @@ export function InstancePage() {
   const trafficResetText = formatTrafficResetCountdown(
     live?.traffic_next_reset || node.traffic_next_reset,
   );
+  const trafficQuota = calculateTrafficUsage(
+    node.traffic_limit,
+    node.traffic_limit_type,
+    live?.net_total_up ?? 0,
+    live?.net_total_down ?? 0,
+    live?.traffic_used,
+  );
   const recordsDisabled = settings?.record_enabled === false;
 
   const paperStyle = {
@@ -684,6 +692,16 @@ export function InstancePage() {
             <span className="km-stat-meta km-num">
               ↓ {formatTraffic(live?.net_total_down ?? 0)}
             </span>
+            {trafficQuota ? (
+              <span
+                className="km-stat-meta km-num km-traffic-limit-hint"
+                data-urgent={trafficQuota.percent >= 90 ? "danger" : trafficQuota.percent >= 80 ? "true" : "false"}
+                style={{ marginTop: "2px", display: "inline-flex", alignItems: "center", gap: "4px" }}
+              >
+                <DoodleIcon name="globe" className="km-bottom-arrow" />
+                {t("metric.trafficLimit")}: {trafficQuota.usedText} / {trafficQuota.limitText} ({formatPercent(trafficQuota.percent, 1)}%)
+              </span>
+            ) : null}
             {trafficResetText ? (
               <span className="km-stat-meta km-num km-traffic-reset-hint" style={{ marginTop: "2px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
                 <DoodleIcon name="clock" className="km-bottom-arrow" />

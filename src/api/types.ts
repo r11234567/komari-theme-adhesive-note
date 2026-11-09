@@ -94,6 +94,8 @@ export interface NodeStatus {
   uptime: number;
   /** 流量下一次重置时间（ISO8601） */
   traffic_next_reset?: string;
+  /** 本周期已计费流量（字节） */
+  traffic_used?: number;
 }
 
 export type NodeStatusMap = Record<string, NodeStatus>;

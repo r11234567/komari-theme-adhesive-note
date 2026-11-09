@@ -17,6 +17,7 @@ import { PaperSheet } from "./PaperSheet";
 import { PaperSurface } from "./PaperSurface";
 import { deriveAppearance, stableSeed } from "@/lib/seed";
 import {
+  calculateTrafficUsage,
   expiryDays,
   formatBytes,
   formatPercent,
@@ -26,6 +27,7 @@ import {
   formatUptime,
   shortenOS,
   toPercent,
+  type TrafficQuotaResult,
 } from "@/lib/format";
 
 interface Props {
@@ -143,6 +145,7 @@ const CardBottom = memo(function CardBottom({
   trafficOutText,
   trafficInText,
   trafficResetText,
+  trafficQuota,
   uptimeValue,
   uptimeUnit,
   roughSeed,
@@ -151,6 +154,7 @@ const CardBottom = memo(function CardBottom({
   trafficOutText: string;
   trafficInText: string;
   trafficResetText: string | null;
+  trafficQuota: TrafficQuotaResult | null;
   uptimeValue: number;
   uptimeUnit: "day" | "hour" | "minute";
   roughSeed: number;
@@ -174,6 +178,21 @@ const CardBottom = memo(function CardBottom({
           </span>
           <div className="km-bottom-value km-num">{trafficInText}</div>
         </div>
+        {trafficQuota ? (
+          <div
+            className="km-bottom-row km-bottom-row--limit"
+            data-urgent={trafficQuota.percent >= 90 ? "danger" : trafficQuota.percent >= 80 ? "true" : "false"}
+          >
+            <span className="km-bottom-label">
+              <DoodleIcon name="globe" className="km-bottom-arrow" />
+              {t("metric.trafficQuota")}
+            </span>
+            <div className="km-bottom-value km-num km-limit-value">
+              {trafficQuota.usedText} / {trafficQuota.limitText}
+              <span className="km-limit-percent"> ({formatPercent(trafficQuota.percent, 0)}%)</span>
+            </div>
+          </div>
+        ) : null}
         {trafficResetText ? (
           <div className="km-bottom-row km-bottom-row--reset">
             <span className="km-bottom-label">
@@ -263,6 +282,13 @@ function PaperCardImpl({ node, status, appearanceIndex, useSheet }: Props) {
   const remainingDays = expiryDays(node.expired_at);
   const trafficResetText = formatTrafficResetCountdown(
     status?.traffic_next_reset || node.traffic_next_reset,
+  );
+  const trafficQuota = calculateTrafficUsage(
+    node.traffic_limit,
+    node.traffic_limit_type,
+    trafficOut,
+    trafficIn,
+    status?.traffic_used,
   );
   const uptime = formatUptime(status?.uptime ?? 0);
 
@@ -400,6 +426,7 @@ function PaperCardImpl({ node, status, appearanceIndex, useSheet }: Props) {
           trafficOutText={formatTraffic(trafficOut)}
           trafficInText={formatTraffic(trafficIn)}
           trafficResetText={trafficResetText}
+          trafficQuota={trafficQuota}
           uptimeValue={uptime.value}
           uptimeUnit={uptime.unit}
           roughSeed={look.roughSeed}

@@ -81,8 +81,8 @@ export const MOCK_NODES: KomariNode[] = [
     group: "Standard",
     tags: "vps,general",
     hidden: false,
-    traffic_limit: 2 * 1024 * 1024 * 1024 * 1024,
-    traffic_limit_type: "sum",
+    traffic_limit: 0,
+    traffic_limit_type: "",
     created_at: "2026-02-01T00:00:00Z",
     updated_at: "2026-11-09T00:00:00Z",
   },
@@ -137,6 +137,7 @@ export const MOCK_LIVE_STATUS: NodeStatusMap = {
     online: true,
     uptime: 14 * 86400 + 6 * 3600,
     traffic_next_reset: nextResetDate.toISOString(),
+    traffic_used: 5.0 * 1024 * 1024 * 1024 * 1024,
   },
   [MOCK_NO_GPU_NODE_UUID]: {
     client: MOCK_NO_GPU_NODE_UUID,

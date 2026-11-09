@@ -23,6 +23,8 @@
     "download": "下載",
     "trafficOut": "出站流量",
     "trafficIn": "入站流量",
+    "trafficLimit": "流量限額",
+    "trafficQuota": "配額",
     "trafficReset": "重設",
     "trafficResetRemaining": "還剩 {{time}}",
     "expiresIn": "剩餘時間",

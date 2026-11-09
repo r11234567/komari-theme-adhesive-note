@@ -23,6 +23,8 @@
     "download": "受信",
     "trafficOut": "送信量",
     "trafficIn": "受信量",
+    "trafficLimit": "通信量制限",
+    "trafficQuota": "割当量",
     "trafficReset": "リセット",
     "trafficResetRemaining": "残り {{time}}",
     "expiresIn": "有効期限",

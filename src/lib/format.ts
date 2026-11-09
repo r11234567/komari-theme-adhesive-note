@@ -166,3 +166,65 @@ export function shortenOS(os: string): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+/**
+ * 依据流量阈值类型计算已用计费流量。
+ * 类型包括 sum（双向汇总）、max（进出取大，默认）、min（进出取小）、up（仅出站）、down（仅入站）。
+ */
+export function computeBillableTraffic(
+  type: string | undefined,
+  up: number,
+  down: number,
+): number {
+  const norm = (type || "max").toLowerCase().trim();
+  switch (norm) {
+    case "up":
+      return up;
+    case "down":
+      return down;
+    case "sum":
+      return up + down;
+    case "min":
+      return Math.min(up, down);
+    case "max":
+    default:
+      return Math.max(up, down);
+  }
+}
+
+export interface TrafficQuotaResult {
+  hasLimit: boolean;
+  limit: number;
+  used: number;
+  percent: number;
+  limitText: string;
+  usedText: string;
+}
+
+/**
+ * 计算流量限额使用情况。
+ * 若无有效限额（trafficLimit <= 0），返回 null。
+ */
+export function calculateTrafficUsage(
+  trafficLimit: number | undefined,
+  trafficLimitType: string | undefined,
+  up: number,
+  down: number,
+  billableBytes?: number,
+): TrafficQuotaResult | null {
+  if (!trafficLimit || trafficLimit <= 0) return null;
+  const used =
+    billableBytes && billableBytes > 0
+      ? billableBytes
+      : computeBillableTraffic(trafficLimitType, up, down);
+  const percent = toPercent(used, trafficLimit);
+  return {
+    hasLimit: true,
+    limit: trafficLimit,
+    used,
+    percent,
+    limitText: formatTraffic(trafficLimit),
+    usedText: formatTraffic(used),
+  };
+}
+

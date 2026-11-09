@@ -221,6 +221,9 @@ export const nodeStatusOf = (
     ? isoOf(accounting.nextReset)
     : (agent as unknown as { traffic_next_reset?: string }).traffic_next_reset ||
       undefined;
+  const billableBytes = accounting?.billableBytes
+    ? asNumber(accounting.billableBytes)
+    : undefined;
 
   return {
     client: agent.agentId,
@@ -254,6 +257,7 @@ export const nodeStatusOf = (
     online: agent.status === AgentStatus.ONLINE,
     uptime: report?.system?.uptime ? Number(report.system.uptime.seconds) : 0,
     traffic_next_reset: nextReset,
+    traffic_used: billableBytes,
   };
 };
 

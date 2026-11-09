@@ -1,7 +1,7 @@
 {
   "name": "komari-theme-adhesive-note",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "description": "A Komari Monitor theme that turns every server into a handwritten note stuck on the wall",
   "license": "MIT",
