@@ -6,5 +6,6 @@ theme-package/
 .DS_Store
 .vite/
 scratch/
+screenshots/
 
 # 字体子集产物有意提交入库：让 `npm ci && npm run build` 不依赖 Python/fontTools

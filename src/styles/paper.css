@@ -37,6 +37,8 @@
    * 更深的值。两者色相一致，看上去仍是同一个色系。
    */
   --c-cpu: #2158dc;
+  --c-gpu: #0ea5e9;
+  --c-gpu-mem: #6366f1;
   --c-mem: #8b52d2;
   --c-disk: #ee7a33;
   --c-online: #2f8b3c;
@@ -661,6 +663,12 @@ a.km-node-card:focus-visible {
 .km-metric--cpu {
   --accent: var(--c-cpu);
 }
+.km-metric--gpu {
+  --accent: var(--c-gpu);
+}
+.km-metric--gpu-mem {
+  --accent: var(--c-gpu-mem);
+}
 .km-metric--mem {
   --accent: var(--c-mem);
 }
@@ -1105,6 +1113,73 @@ a.km-node-card:focus-visible {
 .km-admin-link span {
   color: var(--c-cpu);
   font-size: 0.9em;
+}
+
+
+/* ===================== 语言切换器 ===================== */
+.km-lang-picker {
+  position: relative;
+  display: inline-block;
+}
+
+.km-lang-btn {
+  user-select: none;
+  font-size: 14px;
+  padding: 5px 10px;
+}
+
+.km-lang-arrow {
+  font-size: 0.8em;
+  color: var(--ink-faint);
+  margin-left: 2px;
+}
+
+.km-lang-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 120px;
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  background: var(--paper-tint);
+  border-radius: 4px;
+  box-shadow: 0 6px 18px rgba(46, 38, 28, 0.18), 0 2px 4px rgba(46, 38, 28, 0.12);
+  z-index: 100;
+  transform: rotate(-0.4deg);
+}
+
+.km-lang-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 14px;
+  font-family: var(--font-hand);
+  font-size: 14px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.km-lang-item:hover {
+  background: rgba(46, 38, 28, 0.06);
+  color: var(--c-cpu);
+}
+
+.km-lang-item[data-active="true"] {
+  font-weight: bold;
+  color: var(--c-cpu);
+}
+
+.km-traffic-reset-tag {
+  font-size: 0.85em;
+  color: var(--c-warn);
+  margin-left: 4px;
+}
+
+.km-bottom-row--reset .km-reset-value {
+  color: var(--c-warn);
 }
 
 .km-footer {

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import UplotReact from "uplot-react";
 import type uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
-import { LOCALE } from "@/i18n";
 
 /**
  * 手绘风格的时序图表。
@@ -127,6 +127,8 @@ export function RoughChart({
   range,
   adaptiveDensity = false,
 }: Props) {
+  const { i18n } = useTranslation();
+  const currentLocale = i18n.language || "en";
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(600);
   const [fontsReady, setFontsReady] = useState(
@@ -196,18 +198,23 @@ export function RoughChart({
     const duration = Math.max(0, lastTime - firstTime);
     const showSeconds = duration <= 10 * 60;
     const showDate = duration > 12 * 60 * 60;
-    const timeFormatter = new Intl.DateTimeFormat(LOCALE, {
+    const timeFormatter = new Intl.DateTimeFormat(currentLocale, {
       hour: "2-digit",
       minute: "2-digit",
       second: showSeconds ? "2-digit" : undefined,
       hourCycle: "h23",
     });
-    const dateFormatter = new Intl.DateTimeFormat(LOCALE, {
+    const dateFormatter = new Intl.DateTimeFormat(currentLocale, {
       month: "numeric",
       day: "numeric",
     });
     const axisFont =
       '17px "Architects Daughter", "LXGW WenKai Subset", ui-sans-serif, system-ui, sans-serif';
+
+    // 跨点连线阈值：短窗口/非压缩模式下至少 10 分钟（600秒）。
+    // 正常 ping 探测间隔一般在 10s~180s，10 分钟足以为同一任务跨过由其他任务时间戳造成的空隙。
+    // 长时间大跨度断点（如整片掉线 1~2 小时）超过该阈值，将保持断开，不虚假连线。
+    const maxGapSeconds = Math.max(600, duration / 25);
 
     return {
       width,
@@ -258,7 +265,8 @@ export function RoughChart({
           points: { show: false },
           /**
            * 接管描线：沿折线逐点加一点垂直抖动，画出手绘感。
-           * 偏移量由点的索引决定，因此每次重绘的曲线完全一致。
+           * 在时间跨度合理的正常采样间隔内保持平滑连线，遇到较长的大片掉线区间则
+           * 严格断开，单点则绘制点标记。
            */
           paths: (
             self: uPlot,
@@ -269,24 +277,46 @@ export function RoughChart({
             const path = new Path2D();
             const xs = self.data[0];
             const ys = self.data[seriesIndex] as (number | null)[];
-            let started = false;
+            let lastValidIdx = -1;
+            let lastValidX = 0;
+            let lastValidY = 0;
+            let segmentPoints = 0;
 
             for (let i = idx0; i <= idx1; i++) {
               const y = ys[i];
               if (y == null) {
-                started = false;
                 continue;
               }
               const cx = self.valToPos(xs[i] as number, "x", true);
               const cy = self.valToPos(y, "y", true) + jitter(i, index + 1) * 1.1;
 
-              if (!started) {
-                path.moveTo(cx, cy);
-                started = true;
+              if (lastValidIdx !== -1) {
+                const timeDiff = (xs[i] as number) - (xs[lastValidIdx] as number);
+                if (timeDiff <= maxGapSeconds) {
+                  path.lineTo(cx, cy);
+                  segmentPoints++;
+                } else {
+                  // 大跨度掉线/离线断开：如果前一段只有一个孤立点，画一个实心小圆点
+                  if (segmentPoints === 1) {
+                    path.arc(lastValidX, lastValidY, 1.8, 0, Math.PI * 2);
+                  }
+                  path.moveTo(cx, cy);
+                  segmentPoints = 1;
+                }
               } else {
-                path.lineTo(cx, cy);
+                path.moveTo(cx, cy);
+                segmentPoints = 1;
               }
+
+              lastValidIdx = i;
+              lastValidX = cx;
+              lastValidY = cy;
             }
+
+            if (segmentPoints === 1) {
+              path.arc(lastValidX, lastValidY, 1.8, 0, Math.PI * 2);
+            }
+
             return { stroke: path };
           },
         })),
@@ -303,6 +333,7 @@ export function RoughChart({
     range,
     formatValue,
     fontsReady,
+    currentLocale,
   ]);
 
   return (

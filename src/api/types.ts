@@ -1,11 +1,11 @@
 /**
  * Komari 数据类型定义。
  *
- * 全部字段基于 Komari 1.4.3（hash bf6b45e）的真实响应核对，
+ * 全部字段基于 Komari 1.4.3（hash bf6b45e）及 draft PR 分支的真实响应核对，
  * 与 `dev/rpc.md` 文档有出入之处以实测为准，并在注释中标注。
  */
 
-/** 节点静态信息，来自 `public:getNodesInformation` */
+/** 节点静态信息，来自 `public:getNodesInformation` 或 `BrowserService.ListAgents` */
 export interface KomariNode {
   uuid: string;
   name: string;
@@ -37,20 +37,36 @@ export interface KomariNode {
   created_at: string;
   updated_at: string;
   public_remark?: string;
+  /** 流量重置时间（ISO8601），来自 draft PR 分支支持 */
+  traffic_next_reset?: string;
+  traffic_reset_cycle?: string;
+  traffic_reset_day?: number;
+  traffic_reset_time?: string;
+  traffic_reset_timezone?: string;
 }
 
 /**
- * 节点实时状态，来自 `common:getNodesLatestStatus`。
+ * 节点实时状态，来自 `common:getNodesLatestStatus` 或 `BrowserService.WatchAgentStatus`。
  *
  * 注意这是**扁平结构**（`cpu` 而非 `cpu.usage`），与旧版 WebSocket 的嵌套结构不同。
- * `uptime` 在文档表格中未列出，但实测确实返回。
  */
 export interface NodeStatus {
   client: string;
   time: string;
   /** CPU 使用率百分比（0-100） */
   cpu: number;
+  /** GPU 使用率百分比（0-100） */
   gpu: number;
+  /** GPU 显存使用（字节） */
+  gpu_mem?: number;
+  /** GPU 显存总量（字节） */
+  gpu_mem_total?: number;
+  /** GPU 显存使用率百分比（0-100） */
+  gpu_mem_percent?: number;
+  /** GPU 名称 */
+  gpu_name?: string;
+  /** 是否有可用 GPU 数据 */
+  has_gpu?: boolean;
   ram: number;
   ram_total: number;
   swap: number;
@@ -76,6 +92,8 @@ export interface NodeStatus {
   online: boolean;
   /** 运行时长（秒） */
   uptime: number;
+  /** 流量下一次重置时间（ISO8601） */
+  traffic_next_reset?: string;
 }
 
 export type NodeStatusMap = Record<string, NodeStatus>;
@@ -89,6 +107,8 @@ export type NodeStatusMap = Record<string, NodeStatus>;
 export interface RecentReport {
   uuid: string;
   cpu?: { usage?: number };
+  gpu?: { usage?: number };
+  gpu_mem?: { used?: number; total?: number };
   ram?: { total?: number; used?: number };
   swap?: { total?: number; used?: number };
   load?: { load1?: number; load5?: number; load15?: number };
@@ -131,7 +151,7 @@ export interface VersionInfo {
 }
 
 /**
- * 历史负载记录，来自 `public:getRecordsByUUID`。
+ * 历史负载记录，来自 `public:getRecordsByUUID` 或 `MetricsService.QueryMetrics`。
  *
  * ⚠️ 陷阱：`ram_total` 与 `disk_total` 在历史记录里恒为 0，
  * 计算百分比必须改用节点静态信息的 `mem_total` / `disk_total`。
@@ -141,6 +161,8 @@ export interface LoadRecord {
   time: string;
   cpu: number;
   gpu: number;
+  gpu_mem?: number;
+  gpu_mem_total?: number;
   ram: number;
   ram_total: number;
   swap: number;

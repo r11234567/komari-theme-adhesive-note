@@ -112,7 +112,7 @@ export function formatUptime(seconds: number): {
 }
 
 /** 后端未设置到期时间时返回的零值时间 */
-function isZeroTime(iso: string): boolean {
+function isZeroTime(iso?: string): boolean {
   return !iso || iso.startsWith("0001-01-01");
 }
 
@@ -135,6 +135,24 @@ export function expiryDays(expiredAt: string): number | null {
   if (!Number.isFinite(target)) return null;
   const days = Math.ceil((target - Date.now()) / 86_400_000);
   return days > LONG_TERM_DAYS ? null : days;
+}
+
+/**
+ * 流量重置倒计时（还剩多少d多少h）。
+ * 返回例如 "5d 14h"；到期或过去返回 "0d 0h"；未设置返回 null。
+ */
+export function formatTrafficResetCountdown(
+  nextResetIso?: string,
+): string | null {
+  if (!nextResetIso || isZeroTime(nextResetIso)) return null;
+  const target = new Date(nextResetIso).getTime();
+  if (!Number.isFinite(target)) return null;
+  const diffMs = target - Date.now();
+  if (diffMs <= 0) return "0d 0h";
+  const totalHours = Math.floor(diffMs / 3_600_000);
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  return `${days}d ${hours}h`;
 }
 
 /**

@@ -28,7 +28,6 @@ import { PaperSurface } from "@/components/paper/PaperSurface";
 import { Stationery } from "@/components/paper/Stationery";
 import { useLiveData } from "@/contexts/live-data";
 import { useSite } from "@/contexts/site";
-import { LOCALE } from "@/i18n";
 import {
   expiryDays,
   formatBytes,
@@ -36,6 +35,7 @@ import {
   formatSpeed,
   formatSpeedAxis,
   formatTraffic,
+  formatTrafficResetCountdown,
   formatUptime,
   shortenOS,
   toPercent,
@@ -109,7 +109,9 @@ function recentReportToLoadRecord(report: RecentReport): LoadRecord {
     client: report.uuid,
     time: report.updated_at,
     cpu: numeric(report.cpu?.usage),
-    gpu: 0,
+    gpu: numeric(report.gpu?.usage),
+    gpu_mem: numeric(report.gpu_mem?.used),
+    gpu_mem_total: numeric(report.gpu_mem?.total),
     ram: numeric(report.ram?.used),
     ram_total: numeric(report.ram?.total),
     swap: numeric(report.swap?.used),
@@ -138,6 +140,8 @@ function liveStatusToLoadRecord(
     time: new Date(sampledAt).toISOString(),
     cpu: numeric(status.cpu),
     gpu: numeric(status.gpu),
+    gpu_mem: numeric(status.gpu_mem),
+    gpu_mem_total: numeric(status.gpu_mem_total),
     ram: numeric(status.ram),
     ram_total: numeric(status.ram_total),
     swap: numeric(status.swap),
@@ -172,7 +176,7 @@ function mergeRealtimeRecords(
 }
 
 export function InstancePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { uuid } = useParams<{ uuid: string }>();
   const { nodes, settings, loading } = useSite();
   const { status, updatedAt } = useLiveData();
@@ -283,6 +287,48 @@ export function InstancePage() {
    * 历史记录里的 ram_total / disk_total 恒为 0（服务端不重复存总量），
    * 换算百分比必须回到节点静态信息里取。
    */
+    const hasLiveGpu = Boolean(
+    live?.has_gpu ||
+    (node?.gpu_name && node.gpu_name.trim() !== "" && node.gpu_name.toLowerCase() !== "none") ||
+    recordsQuery.data?.has_gpu_data ||
+    records.some((r) => (r.gpu ?? 0) > 0 || (r.gpu_mem ?? 0) > 0),
+  );
+
+  const gpuMemTotal =
+    live?.gpu_mem_total ||
+    records.find((r) => (r.gpu_mem_total ?? 0) > 0)?.gpu_mem_total ||
+    0;
+
+  const hasLiveGpuMem = Boolean(
+    hasLiveGpu &&
+    (gpuMemTotal > 0 || (live?.gpu_mem ?? 0) > 0 || records.some((r) => (r.gpu_mem ?? 0) > 0)),
+  );
+
+  const gpuSeries = useMemo<ChartSeries[]>(
+    () => [
+      {
+        label: t("metric.gpu"),
+        values: records.map((r) => r.gpu ?? 0),
+        color: "var(--c-gpu)",
+      },
+    ],
+    [records, t],
+  );
+
+  const gpuMemSeries = useMemo<ChartSeries[]>(
+    () => [
+      {
+        label: t("metric.gpuMemory"),
+        values: records.map((r) => {
+          const total = r.gpu_mem_total || gpuMemTotal;
+          return total > 0 ? toPercent(r.gpu_mem ?? 0, total) : (r.gpu_mem ?? 0);
+        }),
+        color: "var(--c-gpu-mem)",
+      },
+    ],
+    [records, gpuMemTotal, t],
+  );
+
   const cpuSeries = useMemo<ChartSeries[]>(
     () => [
       {
@@ -368,7 +414,7 @@ export function InstancePage() {
       }
       const index = timeIndex.get(toSeconds(record.time));
       // 负值代表这次探测失败，画成断点而不是画到 0
-      if (index !== undefined) list[index] = record.value < 0 ? null : record.value;
+      if (index !== undefined) list[index] = record.value <= 0 ? null : record.value;
     }
 
     const palette = [
@@ -417,13 +463,13 @@ export function InstancePage() {
 
   const rangeFormatter = useMemo(
     () =>
-      new Intl.DateTimeFormat(LOCALE, {
+      new Intl.DateTimeFormat(i18n.language || "en", {
         month: "short",
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
       }),
-    [],
+    [i18n.language],
   );
 
   const selectedStart = selectedPingChart?.times[0];
@@ -464,6 +510,9 @@ export function InstancePage() {
   const down = formatSpeed(live?.net_in ?? 0);
   const uptime = formatUptime(live?.uptime ?? 0);
   const remainingDays = expiryDays(node.expired_at);
+  const trafficResetText = formatTrafficResetCountdown(
+    live?.traffic_next_reset || node.traffic_next_reset,
+  );
   const recordsDisabled = settings?.record_enabled === false;
 
   const paperStyle = {
@@ -545,6 +594,40 @@ export function InstancePage() {
             </span>
           </div>
 
+          {hasLiveGpu ? (
+            <div className="km-stat">
+              <span className="km-stat-label">
+                <DoodleIcon name="gpu" />
+                {t("metric.gpu")}
+              </span>
+              <b className="km-stat-value km-num" style={{ color: "var(--c-gpu)" }}>
+                {formatPercent(live?.gpu ?? 0)}%
+              </b>
+              <span className="km-stat-meta km-num">
+                {node.gpu_name || t("metric.gpu")}
+              </span>
+            </div>
+          ) : null}
+
+          {hasLiveGpuMem ? (
+            <div className="km-stat">
+              <span className="km-stat-label">
+                <DoodleIcon name="gpu" />
+                {t("metric.gpuMemory")}
+              </span>
+              <b className="km-stat-value km-num" style={{ color: "var(--c-gpu-mem)" }}>
+                {gpuMemTotal > 0
+                  ? `${formatPercent(toPercent(live?.gpu_mem ?? 0, gpuMemTotal))}%`
+                  : formatBytes(live?.gpu_mem ?? 0)}
+              </b>
+              <span className="km-stat-meta km-num">
+                {gpuMemTotal > 0
+                  ? `${formatBytes(live?.gpu_mem ?? 0)} / ${formatBytes(gpuMemTotal)}`
+                  : formatBytes(live?.gpu_mem ?? 0)}
+              </span>
+            </div>
+          ) : null}
+
           <div className="km-stat">
             <span className="km-stat-label">
               <DoodleIcon name="disk" />
@@ -601,6 +684,12 @@ export function InstancePage() {
             <span className="km-stat-meta km-num">
               ↓ {formatTraffic(live?.net_total_down ?? 0)}
             </span>
+            {trafficResetText ? (
+              <span className="km-stat-meta km-num km-traffic-reset-hint" style={{ marginTop: "2px", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                <DoodleIcon name="clock" className="km-bottom-arrow" />
+                {t("metric.trafficResetRemaining", { time: trafficResetText })}
+              </span>
+            ) : null}
           </div>
 
           <div className="km-stat">
@@ -753,7 +842,35 @@ export function InstancePage() {
                 />
               </ChartCard>
 
-              <ChartCard
+              {hasLiveGpu ? (
+                <ChartCard
+                  title={t("instance.gpuChart")}
+                  seed="gpu"
+                >
+                  <RoughChart
+                    timestamps={timestamps}
+                    series={gpuSeries}
+                    range={[0, 100]}
+                    formatValue={(v) => `${v.toFixed(0)}%`}
+                  />
+                </ChartCard>
+              ) : null}
+
+              {hasLiveGpuMem ? (
+                <ChartCard
+                  title={t("instance.gpuMemoryChart")}
+                  seed="gpu_mem"
+                >
+                  <RoughChart
+                    timestamps={timestamps}
+                    series={gpuMemSeries}
+                    range={gpuMemTotal > 0 ? [0, 100] : undefined}
+                    formatValue={gpuMemTotal > 0 ? (v) => `${v.toFixed(0)}%` : formatBytes}
+                  />
+                </ChartCard>
+              ) : null}
+
+<ChartCard
                 title={t("instance.memoryChart")}
                 seed="memory"
               >

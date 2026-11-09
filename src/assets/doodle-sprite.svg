@@ -30,6 +30,18 @@
   </g>
 </symbol>
 
+
+<!-- GPU：显卡本体 + 风扇 + PCIe 金手指 -->
+<symbol id="icon-gpu" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.8 5.6c-.6 0-1.1.5-1.1 1.1v11.8c0 .6.5 1.1 1.1 1.1h1.8v-2.2H19.5c1.2 0 2.2-1 2.2-2.2V7.8c0-1.2-1-2.2-2.2-2.2H2.8Z" stroke-width="1.8"/>
+    <circle cx="11.8" cy="11.5" r="3.2" stroke-width="1.3"/>
+    <circle cx="11.8" cy="11.5" r="0.8" stroke-width="1.2"/>
+    <path d="M11.8 8.3v1.8M11.8 12.9v1.8M8.6 11.5h1.8M13.2 11.5h1.8M9.5 9.2l1.3 1.3M12.8 12.5l1.3 1.3M9.5 13.8l1.3-1.3M12.8 10.5l1.3-1.3" stroke-width="1"/>
+    <path d="M6.5 17.4v2.4M8.5 17.4v2.4M10.5 17.4v2.4M12.5 17.4v2.4M14.5 17.4v2.4" stroke-width="1.2"/>
+  </g>
+</symbol>
+
 <!-- 内存：横置模组，三颗芯片，上下两排触点 -->
 <symbol id="icon-memory" viewBox="0 0 24 24">
   <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">

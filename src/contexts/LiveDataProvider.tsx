@@ -1,3 +1,4 @@
+import { isMockEnabled, MOCK_LIVE_STATUS } from "@/api/mockData";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { NodeStatusMap } from "@/api/types";
@@ -24,12 +25,13 @@ const RECONNECT_DELAY = 2_000;
  * 沿用原有两项优化：逐字段 diff 后复用旧引用、页面隐藏时停止订阅。
  */
 export function LiveDataProvider({ children }: { children: ReactNode }) {
-  const [status, setStatus] = useState<NodeStatusMap>({});
-  const [updatedAt, setUpdatedAt] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<NodeStatusMap>(() => isMockEnabled() ? MOCK_LIVE_STATUS : {});
+  const [updatedAt, setUpdatedAt] = useState(() => isMockEnabled() ? Date.now() : 0);
+  const [loading, setLoading] = useState(() => !isMockEnabled());
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (isMockEnabled()) return;
     let stopped = false;
     let controller: AbortController | null = null;
     let flushTimer: ReturnType<typeof setTimeout> | null = null;

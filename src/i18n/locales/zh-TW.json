@@ -1,0 +1,101 @@
+{
+  "common": {
+    "online": "線上",
+    "offline": "離線",
+    "unknown": "—",
+    "loading": "載入中…",
+    "retry": "重試",
+    "back": "返回",
+    "cores": "核",
+    "core": "核",
+    "admin": "管理後台",
+    "language": "語言"
+  },
+  "metric": {
+    "cpu": "處理器",
+    "gpu": "顯示卡",
+    "gpuMemory": "視訊記憶體",
+    "memory": "記憶體",
+    "disk": "儲存",
+    "load": "負載",
+    "netSpeed": "網路速率",
+    "upload": "上傳",
+    "download": "下載",
+    "trafficOut": "出站流量",
+    "trafficIn": "入站流量",
+    "trafficReset": "重設",
+    "trafficResetRemaining": "還剩 {{time}}",
+    "expiresIn": "剩餘時間",
+    "expired": "已過期",
+    "neverExpires": "無期限",
+    "uptime": "運行時間",
+    "swap": "交換空間",
+    "process": "處理程序",
+    "connections": "連線數",
+    "temperature": "溫度"
+  },
+  "unit": {
+    "days": "天",
+    "hours": "小時",
+    "minutes": "分",
+    "ms": "毫秒"
+  },
+  "index": {
+    "title": "伺服器狀態",
+    "empty": "目前無節點",
+    "emptyHint": "在管理後台新增節點後，便會貼在此處。",
+    "loadFailed": "資料載入失敗",
+    "nodeCount": "{{count}} 個節點",
+    "onlineCount": "{{online}} / {{total}} 線上"
+  },
+  "instance": {
+    "notFound": "找不到節點",
+    "notFoundHint": "節點可能已移除，或您沒有權限檢視。",
+    "backToIndex": "返回首頁",
+    "overview": "概覽",
+    "charts": "監控圖表",
+    "systemTab": "系統指標",
+    "latencyTab": "網路延遲",
+    "cpuChart": "CPU 使用率",
+    "gpuChart": "GPU 使用率",
+    "gpuMemoryChart": "視訊記憶體使用率",
+    "memoryChart": "記憶體使用率",
+    "diskChart": "磁碟使用率",
+    "networkChart": "網路速率",
+    "loadChart": "系統負載",
+    "pingChart": "網路延遲",
+    "latencyRange": "延遲圖表範圍選擇",
+    "rangeStart": "選區起點",
+    "rangeEnd": "選區終點",
+    "selectedRange": "時間範圍：{{start}} — {{end}}",
+    "adaptiveDensity": "資料密度隨選區自適應調整",
+    "noData": "該時間範圍內無資料",
+    "recordDisabled": "站點已停用歷史記錄功能",
+    "system": "作業系統",
+    "kernel": "核心版本",
+    "arch": "架構",
+    "virtualization": "虛擬化",
+    "cpuModel": "CPU 型號",
+    "price": "價格",
+    "billingCycle": "計費週期",
+    "free": "免費",
+    "perDays": "每 {{count}} 天"
+  },
+  "range": {
+    "realtime": "即時",
+    "1h": "1小時",
+    "4h": "4小時",
+    "24h": "24小時",
+    "7d": "7天",
+    "hours": "{{count}}小時",
+    "days": "{{count}}天"
+  },
+  "footer": {
+    "poweredBy": "由 Komari Monitor 強力驅動。"
+  },
+  "notFound": {
+    "title": "便箋不存在",
+    "hint": "網址可能輸入有誤。",
+    "home": "返回首頁"
+  }
+}

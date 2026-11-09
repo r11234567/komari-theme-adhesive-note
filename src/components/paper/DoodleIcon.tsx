@@ -3,6 +3,7 @@ import spriteMarkup from "@/assets/doodle-sprite.svg?raw";
 /** sprite 中可用的图标名 */
 export type DoodleName =
   | "cpu"
+  | "gpu"
   | "memory"
   | "disk"
   | "load"

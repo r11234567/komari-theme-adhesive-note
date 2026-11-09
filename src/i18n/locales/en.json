@@ -8,10 +8,13 @@
     "back": "Back",
     "cores": "cores",
     "core": "core",
-    "admin": "Admin"
+    "admin": "Admin",
+    "language": "Language"
   },
   "metric": {
     "cpu": "CPU",
+    "gpu": "GPU",
+    "gpuMemory": "GPU Mem",
     "memory": "Memory",
     "disk": "Disk",
     "load": "Load",
@@ -20,6 +23,8 @@
     "download": "Download",
     "trafficOut": "Traffic Out",
     "trafficIn": "Traffic In",
+    "trafficReset": "Reset",
+    "trafficResetRemaining": "Resets in {{time}}",
     "expiresIn": "Expires in",
     "expired": "Expired",
     "neverExpires": "No expiry",
@@ -52,6 +57,8 @@
     "systemTab": "System metrics",
     "latencyTab": "Network latency",
     "cpuChart": "CPU usage",
+    "gpuChart": "GPU usage",
+    "gpuMemoryChart": "GPU memory",
     "memoryChart": "Memory usage",
     "diskChart": "Disk usage",
     "networkChart": "Network speed",

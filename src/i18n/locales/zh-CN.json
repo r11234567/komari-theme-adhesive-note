@@ -1,0 +1,101 @@
+{
+  "common": {
+    "online": "在线",
+    "offline": "离线",
+    "unknown": "—",
+    "loading": "加载中…",
+    "retry": "重试",
+    "back": "返回",
+    "cores": "核",
+    "core": "核",
+    "admin": "管理后台",
+    "language": "语言"
+  },
+  "metric": {
+    "cpu": "处理器",
+    "gpu": "显卡",
+    "gpuMemory": "显存",
+    "memory": "内存",
+    "disk": "存储",
+    "load": "负载",
+    "netSpeed": "网络速率",
+    "upload": "上行",
+    "download": "下行",
+    "trafficOut": "出站流量",
+    "trafficIn": "入站流量",
+    "trafficReset": "重置",
+    "trafficResetRemaining": "还剩 {{time}}",
+    "expiresIn": "剩余时长",
+    "expired": "已到期",
+    "neverExpires": "长期有效",
+    "uptime": "运行时间",
+    "swap": "交换空间",
+    "process": "进程数",
+    "connections": "连接数",
+    "temperature": "温度"
+  },
+  "unit": {
+    "days": "天",
+    "hours": "小时",
+    "minutes": "分",
+    "ms": "毫秒"
+  },
+  "index": {
+    "title": "服务器状态",
+    "empty": "暂无节点",
+    "emptyHint": "在管理后台添加节点后，便贴在此处。",
+    "loadFailed": "数据加载失败",
+    "nodeCount": "{{count}} 个节点",
+    "onlineCount": "{{online}} / {{total}} 在线"
+  },
+  "instance": {
+    "notFound": "未找到节点",
+    "notFoundHint": "节点可能已被移除，或您暂无权限查看。",
+    "backToIndex": "返回首页",
+    "overview": "概览",
+    "charts": "监控图表",
+    "systemTab": "系统指标",
+    "latencyTab": "网络延迟",
+    "cpuChart": "CPU 使用率",
+    "gpuChart": "GPU 使用率",
+    "gpuMemoryChart": "显存使用率",
+    "memoryChart": "内存使用率",
+    "diskChart": "磁盘使用率",
+    "networkChart": "网络速率",
+    "loadChart": "系统负载",
+    "pingChart": "网络延迟",
+    "latencyRange": "延迟图表范围选择",
+    "rangeStart": "选区起点",
+    "rangeEnd": "选区终点",
+    "selectedRange": "时间范围：{{start}} — {{end}}",
+    "adaptiveDensity": "数据密度随选区自适应调节",
+    "noData": "该时间范围内无数据",
+    "recordDisabled": "站点已停用历史记录功能",
+    "system": "操作系统",
+    "kernel": "内核版本",
+    "arch": "架构",
+    "virtualization": "虚拟化",
+    "cpuModel": "CPU 型号",
+    "price": "价格",
+    "billingCycle": "计费周期",
+    "free": "免费",
+    "perDays": "每 {{count}} 天"
+  },
+  "range": {
+    "realtime": "实时",
+    "1h": "1小时",
+    "4h": "4小时",
+    "24h": "24小时",
+    "7d": "7天",
+    "hours": "{{count}}小时",
+    "days": "{{count}}天"
+  },
+  "footer": {
+    "poweredBy": "由 Komari Monitor 强力驱动。"
+  },
+  "notFound": {
+    "title": "便签不存在",
+    "hint": "访问地址可能输入有误。",
+    "home": "返回首页"
+  }
+}

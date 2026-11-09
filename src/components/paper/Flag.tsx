@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LOCALE } from "@/i18n";
+import { useTranslation } from "react-i18next";
 import { flagSrc, regionLabel, regionToISO } from "@/lib/flags";
 
 /**
@@ -9,6 +9,7 @@ import { flagSrc, regionLabel, regionToISO } from "@/lib/flags";
  * 回退渲染原始字符，绝不留空白。
  */
 export function Flag({ region }: { region: string }) {
+  const { i18n } = useTranslation();
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
   const iso = regionToISO(region);
@@ -22,7 +23,7 @@ export function Flag({ region }: { region: string }) {
     ) : null;
   }
 
-  const label = regionLabel(iso, LOCALE);
+  const label = regionLabel(iso, i18n.language || "en");
 
   return (
     <img

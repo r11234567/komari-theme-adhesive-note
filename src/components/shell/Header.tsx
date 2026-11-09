@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { useLiveData } from "@/contexts/live-data";
 import { useSite } from "@/contexts/site";
+import { LanguagePicker } from "./LanguagePicker";
 
 export function Header() {
   const { t } = useTranslation();
@@ -37,6 +38,7 @@ export function Header() {
       </div>
 
       <div className="km-navbar-actions">
+        <LanguagePicker />
         <a className="km-ui-button km-admin-link" href="/admin/dashboard">
           {t("common.admin")}
           <span aria-hidden="true">↗</span>

@@ -22,6 +22,7 @@ import {
   formatPercent,
   formatSpeed,
   formatTraffic,
+  formatTrafficResetCountdown,
   formatUptime,
   shortenOS,
   toPercent,
@@ -59,7 +60,7 @@ const MetricRow = memo(function MetricRow({
   accent,
   digits,
 }: {
-  icon: "cpu" | "memory" | "disk";
+  icon: "cpu" | "gpu" | "memory" | "disk";
   label: string;
   percent: number;
   detail: string;
@@ -141,6 +142,7 @@ const CardBottom = memo(function CardBottom({
   remainingDays,
   trafficOutText,
   trafficInText,
+  trafficResetText,
   uptimeValue,
   uptimeUnit,
   roughSeed,
@@ -148,6 +150,7 @@ const CardBottom = memo(function CardBottom({
   remainingDays: number | null;
   trafficOutText: string;
   trafficInText: string;
+  trafficResetText: string | null;
   uptimeValue: number;
   uptimeUnit: "day" | "hour" | "minute";
   roughSeed: number;
@@ -157,49 +160,60 @@ const CardBottom = memo(function CardBottom({
   return (
     <div className="km-card-bottom">
       <div className="km-bottom-cell km-bottom-cell--traffic">
-          <div className="km-bottom-row km-bottom-row--out">
-            <span className="km-bottom-label">
-              <DoodleIcon name="upload" className="km-bottom-arrow" />
-              {t("metric.trafficOut")}
-            </span>
-            <div className="km-bottom-value km-num">{trafficOutText}</div>
-          </div>
-          <div className="km-bottom-row km-bottom-row--in">
-            <span className="km-bottom-label">
-              <DoodleIcon name="download" className="km-bottom-arrow" />
-              {t("metric.trafficIn")}
-            </span>
+        <div className="km-bottom-row km-bottom-row--out">
+          <span className="km-bottom-label">
+            <DoodleIcon name="upload" className="km-bottom-arrow" />
+            {t("metric.trafficOut")}
+          </span>
+          <div className="km-bottom-value km-num">{trafficOutText}</div>
+        </div>
+        <div className="km-bottom-row km-bottom-row--in">
+          <span className="km-bottom-label">
+            <DoodleIcon name="download" className="km-bottom-arrow" />
+            {t("metric.trafficIn")}
+          </span>
           <div className="km-bottom-value km-num">{trafficInText}</div>
         </div>
+        {trafficResetText ? (
+          <div className="km-bottom-row km-bottom-row--reset">
+            <span className="km-bottom-label">
+              <DoodleIcon name="clock" className="km-bottom-arrow" />
+              {t("metric.trafficReset")}
+            </span>
+            <div className="km-bottom-value km-num km-reset-value">
+              {t("metric.trafficResetRemaining", { time: trafficResetText })}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="km-bottom-cell km-bottom-cell--expiry">
-          <div className="km-expiry-box">
-            {remainingDays === null ? (
-              <>
-                <div className="km-expiry-label">{t("metric.expiresIn")}</div>
-                <div className="km-expiry-value">
-                  <HandInfinity seed={roughSeed} label={t("metric.neverExpires")} />
-                </div>
-              </>
-            ) : remainingDays < 0 ? (
-              <>
-                <div className="km-expiry-label">{t("metric.expired")}</div>
-                <div className="km-expiry-value km-num" data-urgent="true">
-                  {Math.abs(remainingDays)} {t("unit.days")}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="km-expiry-label">{t("metric.expiresIn")}</div>
-                <div
-                  className="km-expiry-value km-num"
-                  data-urgent={urgency(remainingDays)}
-                >
-                  {remainingDays} {t("unit.days")}
-                </div>
-              </>
-            )}
+        <div className="km-expiry-box">
+          {remainingDays === null ? (
+            <>
+              <div className="km-expiry-label">{t("metric.expiresIn")}</div>
+              <div className="km-expiry-value">
+                <HandInfinity seed={roughSeed} label={t("metric.neverExpires")} />
+              </div>
+            </>
+          ) : remainingDays < 0 ? (
+            <>
+              <div className="km-expiry-label">{t("metric.expired")}</div>
+              <div className="km-expiry-value km-num" data-urgent="true">
+                {Math.abs(remainingDays)} {t("unit.days")}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="km-expiry-label">{t("metric.expiresIn")}</div>
+              <div
+                className="km-expiry-value km-num"
+                data-urgent={urgency(remainingDays)}
+              >
+                {remainingDays} {t("unit.days")}
+              </div>
+            </>
+          )}
 
           <div className="km-expiry-uptime">
             {t("metric.uptime")}
@@ -231,6 +245,15 @@ function PaperCardImpl({ node, status, appearanceIndex, useSheet }: Props) {
   const memPercent = toPercent(status?.ram ?? 0, memTotal);
   const diskPercent = toPercent(status?.disk ?? 0, diskTotal);
 
+  const hasGpu = Boolean(
+    status?.has_gpu ||
+    (node.gpu_name && node.gpu_name.trim() !== "" && node.gpu_name.toLowerCase() !== "none"),
+  );
+
+  const hasGpuMem = Boolean(
+    hasGpu && status?.gpu_mem_total && status.gpu_mem_total > 0,
+  );
+
   const up = formatSpeed(status?.net_out ?? 0);
   const down = formatSpeed(status?.net_in ?? 0);
 
@@ -238,6 +261,9 @@ function PaperCardImpl({ node, status, appearanceIndex, useSheet }: Props) {
   const trafficOut = status?.net_total_up ?? status?.net_total_out ?? 0;
   const trafficIn = status?.net_total_down ?? 0;
   const remainingDays = expiryDays(node.expired_at);
+  const trafficResetText = formatTrafficResetCountdown(
+    status?.traffic_next_reset || node.traffic_next_reset,
+  );
   const uptime = formatUptime(status?.uptime ?? 0);
 
   const cores = node.cpu_cores || 1;
@@ -289,6 +315,18 @@ function PaperCardImpl({ node, status, appearanceIndex, useSheet }: Props) {
               accent="var(--c-cpu)"
               digits={2}
             />
+            {hasGpu ? (
+              <MetricRow
+                icon="gpu"
+                label={t("metric.gpu")}
+                percent={status?.gpu ?? 0}
+                detail={node.gpu_name || "GPU"}
+                modifier="gpu"
+                seed={stableSeed(`${node.uuid}:gpu`)}
+                accent="var(--c-gpu)"
+                digits={1}
+              />
+            ) : null}
             <MetricRow
               icon="memory"
               label={t("metric.memory")}
@@ -299,6 +337,21 @@ function PaperCardImpl({ node, status, appearanceIndex, useSheet }: Props) {
               accent="var(--c-mem)"
               digits={2}
             />
+            {hasGpuMem ? (
+              <MetricRow
+                icon="memory"
+                label={t("metric.gpuMemory")}
+                percent={
+                  status?.gpu_mem_percent ??
+                  toPercent(status?.gpu_mem ?? 0, status?.gpu_mem_total ?? 0)
+                }
+                detail={`${formatBytes(status?.gpu_mem ?? 0)} / ${formatBytes(status?.gpu_mem_total ?? 0)}`}
+                modifier="gpu-mem"
+                seed={stableSeed(`${node.uuid}:gpu-mem`)}
+                accent="var(--c-gpu-mem)"
+                digits={1}
+              />
+            ) : null}
             {/* 磁盘只保留一位小数：占用以天为尺度变化，第二位小数是噪声 */}
             <MetricRow
               icon="disk"
@@ -346,6 +399,7 @@ function PaperCardImpl({ node, status, appearanceIndex, useSheet }: Props) {
           remainingDays={remainingDays}
           trafficOutText={formatTraffic(trafficOut)}
           trafficInText={formatTraffic(trafficIn)}
+          trafficResetText={trafficResetText}
           uptimeValue={uptime.value}
           uptimeUnit={uptime.unit}
           roughSeed={look.roughSeed}

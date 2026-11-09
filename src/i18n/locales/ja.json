@@ -1,0 +1,101 @@
+{
+  "common": {
+    "online": "オンライン",
+    "offline": "オフライン",
+    "unknown": "—",
+    "loading": "読み込み中…",
+    "retry": "再試行",
+    "back": "戻る",
+    "cores": "コア",
+    "core": "コア",
+    "admin": "管理画面",
+    "language": "言語"
+  },
+  "metric": {
+    "cpu": "CPU",
+    "gpu": "GPU",
+    "gpuMemory": "GPUメモリ",
+    "memory": "メモリ",
+    "disk": "ディスク",
+    "load": "負荷",
+    "netSpeed": "通信速度",
+    "upload": "送信",
+    "download": "受信",
+    "trafficOut": "送信量",
+    "trafficIn": "受信量",
+    "trafficReset": "リセット",
+    "trafficResetRemaining": "残り {{time}}",
+    "expiresIn": "有効期限",
+    "expired": "期限切れ",
+    "neverExpires": "無期限",
+    "uptime": "稼働時間",
+    "swap": "スワップ",
+    "process": "プロセス",
+    "connections": "接続数",
+    "temperature": "温度"
+  },
+  "unit": {
+    "days": "日",
+    "hours": "時間",
+    "minutes": "分",
+    "ms": "ms"
+  },
+  "index": {
+    "title": "サーバー状況",
+    "empty": "ノードがありません",
+    "emptyHint": "管理パネルでノードを追加すると、ここにメモが貼られます。",
+    "loadFailed": "データの取得に失敗しました",
+    "nodeCount": "{{count}} ノード",
+    "onlineCount": "{{online}} / {{total}} オンライン"
+  },
+  "instance": {
+    "notFound": "ノードが見つかりません",
+    "notFoundHint": "削除されたか、閲覧権限がない可能性があります。",
+    "backToIndex": "トップに戻る",
+    "overview": "概要",
+    "charts": "監視グラフ",
+    "systemTab": "システム指標",
+    "latencyTab": "ネットワーク遅延",
+    "cpuChart": "CPU使用率",
+    "gpuChart": "GPU使用率",
+    "gpuMemoryChart": "GPUメモリ使用率",
+    "memoryChart": "メモリ使用率",
+    "diskChart": "ディスク使用率",
+    "networkChart": "通信速度",
+    "loadChart": "システム負荷",
+    "pingChart": "遅延",
+    "latencyRange": "遅延グラフの範囲選択",
+    "rangeStart": "開始位置",
+    "rangeEnd": "終了位置",
+    "selectedRange": "選択範囲：{{start}} — {{end}}",
+    "adaptiveDensity": "データ密度は選択範囲に応じて自動調整されます",
+    "noData": "この範囲のデータはありません",
+    "recordDisabled": "このサイトでは履歴記録が無効になっています",
+    "system": "OS",
+    "kernel": "カーネル",
+    "arch": "アーキテクチャ",
+    "virtualization": "仮想化",
+    "cpuModel": "CPU",
+    "price": "料金",
+    "billingCycle": "請求サイクル",
+    "free": "無料",
+    "perDays": "{{count}}日ごと"
+  },
+  "range": {
+    "realtime": "リアルタイム",
+    "1h": "1時間",
+    "4h": "4時間",
+    "24h": "24時間",
+    "7d": "7日",
+    "hours": "{{count}}時間",
+    "days": "{{count}}日"
+  },
+  "footer": {
+    "poweredBy": "Powered by Komari Monitor."
+  },
+  "notFound": {
+    "title": "メモが見つかりません",
+    "hint": "URLが間違っている可能性があります。",
+    "home": "トップに戻る"
+  }
+}

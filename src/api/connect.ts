@@ -1,3 +1,11 @@
+import {
+  isMockEnabled,
+  MOCK_NODES,
+  MOCK_SETTINGS,
+  getMockRecentReports,
+  getMockLoadRecords,
+  getMockPingRecords,
+} from "./mockData";
 /**
  * Komari Connect 传输层。
  *
@@ -55,6 +63,8 @@ const isoOf = (value?: Timestamp) =>
 const LOAD_RECORD_METRICS = [
   "cpu.usage",
   "gpu.usage",
+  "gpu.memory.used",
+  "gpu.memory.total",
   "memory.used",
   "swap.used",
   "load.average",
@@ -115,6 +125,13 @@ const publicSettingsOf = (info: GetPublicInfoResponse): PublicSettings => ({
 
 const komariNodeOf = (agent: AgentSummary): KomariNode => {
   const basic = agent.basicInfo;
+  const accounting = agent.trafficAccounting;
+  const nextReset = accounting?.nextReset
+    ? isoOf(accounting.nextReset)
+    : (agent as unknown as { traffic_next_reset?: string }).traffic_next_reset ||
+      (basic as unknown as { trafficNextReset?: string })?.trafficNextReset ||
+      undefined;
+
   return {
     uuid: agent.agentId,
     name: agent.name,
@@ -148,6 +165,11 @@ const komariNodeOf = (agent: AgentSummary): KomariNode => {
     created_at: isoOf(basic?.createdAt),
     updated_at: isoOf(basic?.updatedAt),
     public_remark: basic?.publicRemark || undefined,
+    traffic_next_reset: nextReset,
+    traffic_reset_cycle: accounting?.resetTimezone || undefined,
+    traffic_reset_day: accounting?.resetDay ?? undefined,
+    traffic_reset_time: accounting?.resetTime || undefined,
+    traffic_reset_timezone: accounting?.resetTimezone || undefined,
   };
 };
 
@@ -180,11 +202,38 @@ export const nodeStatusOf = (
   const resources = report?.resources;
   const network = aggregateNetwork(report);
   const disk = aggregateDisk(report);
+  const gpus = resources?.gpus ?? [];
+  const hasGpu = gpus.length > 0;
+  const gpuAvg = gpuAverage(report);
+  const gpuMemUsed = gpus.reduce(
+    (sum, gpu) => sum + asNumber(gpu.memoryUsedBytes),
+    0,
+  );
+  const gpuMemTotal = gpus.reduce(
+    (sum, gpu) => sum + asNumber(gpu.memoryTotalBytes),
+    0,
+  );
+  const gpuMemPercent =
+    gpuMemTotal > 0 ? (gpuMemUsed / gpuMemTotal) * 100 : 0;
+  const gpuName = agent.basicInfo?.gpuName || gpus[0]?.name || "";
+  const accounting = agent.trafficAccounting;
+  const nextReset = accounting?.nextReset
+    ? isoOf(accounting.nextReset)
+    : (agent as unknown as { traffic_next_reset?: string }).traffic_next_reset ||
+      undefined;
+
   return {
     client: agent.agentId,
     time: isoOf(report?.observedAt),
     cpu: resources?.cpuPercent ?? 0,
-    gpu: gpuAverage(report),
+    gpu: gpuAvg,
+    gpu_mem: hasGpu ? gpuMemUsed : undefined,
+    gpu_mem_total: hasGpu ? gpuMemTotal : undefined,
+    gpu_mem_percent: hasGpu && gpuMemTotal > 0 ? gpuMemPercent : undefined,
+    gpu_name: gpuName,
+    has_gpu:
+      hasGpu ||
+      Boolean(gpuName && gpuName.trim() !== "" && gpuName.toLowerCase() !== "none"),
     ram: asNumber(resources?.memoryUsedBytes),
     ram_total: asNumber(report?.system?.memoryTotalBytes),
     swap: asNumber(resources?.swapUsedBytes),
@@ -204,15 +253,18 @@ export const nodeStatusOf = (
     connections_udp: asNumber(resources?.udpConnectionCount),
     online: agent.status === AgentStatus.ONLINE,
     uptime: report?.system?.uptime ? Number(report.system.uptime.seconds) : 0,
+    traffic_next_reset: nextReset,
   };
 };
 
 export async function fetchNodes(): Promise<KomariNode[]> {
+  if (isMockEnabled()) return MOCK_NODES;
   const response = await browserClient.listAgents({});
   return response.agents.map(komariNodeOf);
 }
 
 export async function fetchPublicSettings(): Promise<PublicSettings> {
+  if (isMockEnabled()) return MOCK_SETTINGS;
   return publicSettingsOf(await browserClient.getPublicInfo({}));
 }
 
@@ -241,6 +293,7 @@ const queryMetrics = async (input: {
 
 /** 短时原始采样，用于「实时」视图补齐打开页面之前的一小段曲线。 */
 export async function fetchRecentRecords(uuid: string): Promise<RecentReport[]> {
+  if (isMockEnabled()) return getMockRecentReports(uuid);
   const series = await queryMetrics({
     uuid,
     metrics: LOAD_RECORD_METRICS,
@@ -254,6 +307,8 @@ export async function fetchRecentRecords(uuid: string): Promise<RecentReport[]> 
     const report: RecentReport = {
       uuid,
       cpu: { usage: 0 },
+      gpu: { usage: 0 },
+      gpu_mem: { used: 0, total: 0 },
       ram: { total: 0, used: 0 },
       swap: { total: 0, used: 0 },
       load: { load1: 0, load5: 0, load15: 0 },
@@ -275,6 +330,13 @@ export async function fetchRecentRecords(uuid: string): Promise<RecentReport[]> 
       const value = point.value;
       switch (item.metric) {
         case "cpu.usage": report.cpu = { usage: value }; break;
+        case "gpu.usage": report.gpu = { usage: value }; break;
+        case "gpu.memory.used":
+          report.gpu_mem = { ...(report.gpu_mem ?? { total: 0 }), used: value };
+          break;
+        case "gpu.memory.total":
+          report.gpu_mem = { ...(report.gpu_mem ?? { used: 0 }), total: value };
+          break;
         case "memory.used": report.ram = { ...report.ram, used: value }; break;
         case "swap.used": report.swap = { ...report.swap, used: value }; break;
         case "load.average": report.load = { ...report.load, load1: value }; break;
@@ -305,6 +367,7 @@ export async function fetchLoadRecords(
   uuid: string,
   hours: number,
 ): Promise<LoadRecordsResp> {
+  if (isMockEnabled()) return getMockLoadRecords(uuid, hours);
   const series = await queryMetrics({
     uuid,
     metrics: LOAD_RECORD_METRICS,
@@ -329,6 +392,8 @@ export async function fetchLoadRecords(
       switch (item.metric) {
         case "cpu.usage": record.cpu = value; break;
         case "gpu.usage": record.gpu = value; hasGpuData = true; break;
+        case "gpu.memory.used": record.gpu_mem = value; hasGpuData = true; break;
+        case "gpu.memory.total": record.gpu_mem_total = value; break;
         case "memory.used": record.ram = value; break;
         case "swap.used": record.swap = value; break;
         case "load.average": record.load = value; break;
@@ -362,6 +427,7 @@ export async function fetchPingRecords(
   uuid: string,
   hours: number,
 ): Promise<PingRecordsResp> {
+  if (isMockEnabled()) return getMockPingRecords(uuid, hours);
   const { start, end } = windowFor(hours);
   const [seriesResponse, statsResponse, taskResponse] = await Promise.all([
     metricsClient.queryMetrics({
