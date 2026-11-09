@@ -1,8 +1,10 @@
 /**
  * 数值格式化。
  *
- * 口径对齐设计稿：字节按 1024 进制显示为 KB/MB/GB/TB，
- * 网速按 bps/Kbps/Mbps 显示（字节/秒 × 8 换算为比特/秒）。
+ * 口径对齐后端规范：
+ *   - 内存、显存、磁盘按 1024 进制（二进制字节）显示为 KB/MB/GB/TB，与系统物理硬件口径一致；
+ *   - 计费与总流量特指按 1000 进制（十进制 GB，1 GB = 1,000,000,000 字节），与主流云厂商和 Komari 后端完全对齐；
+ *   - 网速按 bps/Kbps/Mbps 显示（字节/秒 × 8 换算为比特/秒，1000 进制）。
  */
 
 const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"] as const;
@@ -17,7 +19,7 @@ function short(value: number): string {
   return value.toFixed(2);
 }
 
-/** 字节 → `2.41GB`（1024 进制，无空格，与设计稿一致） */
+/** 字节 → `2.41GB`（1024 进制，无空格，用于内存/显存/磁盘） */
 export function formatBytes(bytes: number, gap = ""): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return `0${gap}B`;
   let value = bytes;
@@ -29,10 +31,32 @@ export function formatBytes(bytes: number, gap = ""): string {
   return `${short(value)}${gap}${BYTE_UNITS[unit]}`;
 }
 
-/** 字节 → `63.9 GB`（带空格，用于流量统计一行） */
+/**
+ * 十进制 GB 换算基数（1 GB = 1,000,000,000 字节）。
+ * 与 Komari 后端及各主流云厂商流量计费口径保持一致（特指流量使用十进制 GB）。
+ */
+export const TRAFFIC_GB_BYTES = 1_000_000_000;
+
+/**
+ * 计费/网络总流量格式化（十进制 GB 口径）。
+ *
+ * 后端与官方前端将流量口径统一定为十进制 GB（1 GB = 1,000,000,000 字节），
+ * 避免像 1024 进制（GiB）那样导致 1000 GB 显额显示为 931 GB。
+ * 保留最多两位小数并自动剔除末尾多余的 0（如 1000 GB, 63.9 GB, 2.41 GB, 0 GB）。
+ */
 export function formatTraffic(bytes: number): string {
-  return formatBytes(bytes, " ");
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 GB";
+  const gb = Math.max(0, bytes) / TRAFFIC_GB_BYTES;
+  if (gb > 0 && gb < 0.01) {
+    return "<0.01 GB";
+  }
+  const fixed = gb.toFixed(2);
+  const clean = fixed.replace(/\.?0+$/, "");
+  return `${clean || "0"} GB`;
 }
+
+/** 兼容官方前端方法名 */
+export const formatTrafficGB = formatTraffic;
 
 /**
  * 字节/秒 → `952 bps` / `1.52 Kbps`。
